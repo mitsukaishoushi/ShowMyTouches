@@ -1,0 +1,35 @@
+name: Build ShowMyTouches for sideloading
+on:
+  push:
+    paths:
+      - '.github/workflows/build-sideload.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: brew install make ldid
+      - name: Install Theos
+        run: git clone --recursive --depth 1 https://github.com/theos/theos.git "$HOME/theos"
+      - name: Build standalone sideloading library
+        run: |
+          export THEOS="$HOME/theos"
+          gmake clean all SIDELOADING=1 ARCHS=arm64 TARGET=iphone:clang:latest:14.0 LOGOS_DEFAULT_GENERATOR=internal
+      - name: Collect library and settings resources
+        run: |
+          mkdir -p output
+          LIBRARY="$(find .theos -name ShowMyTouches.dylib -type f | head -n 1)"
+          test -n "$LIBRARY"
+          cp "$LIBRARY" output/ShowMyTouches.dylib
+          cp -R "SMTPrefs/layout/Library/Application Support/SMTPrefs.bundle" output/
+          otool -L output/ShowMyTouches.dylib
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ShowMyTouches-Sideload
+          path: output/
+          if-no-files-found: error
