@@ -1,5 +1,7 @@
 #import <Foundation/Foundation.h>
+#if !SIDELOADING
 #import <roothide.h>
+#endif
 
 NS_ASSUME_NONNULL_BEGIN
 
