@@ -2,7 +2,7 @@ name: Build ShowMyTouches for sideloading
 on:
   push:
     paths:
-      - '.github/workflows/build-sideload.yml'
+      - '**'
   workflow_dispatch:
 permissions:
   contents: read
