@@ -16,6 +16,19 @@ jobs:
         run: brew install make ldid
       - name: Install Theos
         run: git clone --recursive --depth 1 https://github.com/theos/theos.git "$HOME/theos"
+      - name: Embed settings resources for single-file injection
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, pathlib, plistlib
+          root = pathlib.Path("SMTPrefs/layout/Library/Application Support/SMTPrefs.bundle")
+          files = {str(p.relative_to(root)): p.read_bytes() for p in sorted(root.rglob("*")) if p.is_file()}
+          data = plistlib.dumps(files, fmt=plistlib.FMT_BINARY)
+          encoded = base64.b64encode(data).decode()
+          key = "ShowMyTouches-" + hashlib.sha256(data).hexdigest()[:16]
+          header = '#define SMT_EMBEDDED_BUNDLE "' + encoded + '"\n#define SMT_EMBEDDED_BUNDLE_ID "' + key + '"\n'
+          pathlib.Path("SMTPrefs/Categories/NSBundle+SMTPrefs/SMTEmbeddedBundle.h").write_text(header)
+          print("Embedded", len(files), "resource files")
+          PY
       - name: Build standalone sideloading library
         run: |
           export THEOS="$HOME/theos"
